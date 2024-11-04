@@ -2,7 +2,7 @@ from typing import List, Dict, Any, Tuple, Callable, Union, Optional
 import numpy as np
 import pandas as pd
 
-from scripts.GGDL.idx_dict.key_df import StratifiedSampling, KeyDF2KeyDict
+from ..idx_dict.key_df import StratifiedSampling, KeyDF2KeyDict
 
 
 _seed_list = [
