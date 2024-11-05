@@ -10,7 +10,6 @@
 
 
 
-
 # Differential Learning Rate (차등 학습률)
 # 방법: 모델의 각 레이어에 대해 다른 학습률을 설정합니다. 일반적으로 상위 레이어에는 더 높은 학습률을, 하위 레이어에는 낮은 학습률을 적용합니다.
 # 장점: 사전 학습된 저수준 특징은 크게 수정하지 않으면서 고수준 특징을 효율적으로 조정할 수 있습니다.
@@ -20,7 +19,6 @@
 # 방법: 모델의 각 레이어에 대해 학습 중 성능에 따라 동적으로 학습률을 조정합니다.
 # 장점: 모델이 특정 레이어에 대해 학습을 더 필요로 하는 경우 이를 반영할 수 있습니다.
 # 단점: 학습률 조정 로직이 복잡하며, 계산 비용이 증가할 수 있습니다.
-
 
 
 
@@ -48,11 +46,14 @@ class Tuner:
             self, 
             model:torch.nn.Module,
             tuning_target:set='layer',
+            how:int=0,
 
             freezing_ratio:Optional[float]=None,
 
             min_freezing_ratio:Optional[float]=None,
             max_freezing_ratio:Optional[float]=None,
+
+            patience:Optional[int]=None,
 
             layer_key:Optional[str]=None,
 
@@ -62,10 +63,11 @@ class Tuner:
         ):
         # 학습에 사용되는 model
         self.model = model
+        self.how = how
 
         # metadata
         self.target_list = ['layer', 'block', 'parameter']      # idx_df에서 idx가 될 수 있는 column의 list
-        self.convert_key = None         # 학습 조건을 학습 중에 변경할 것인지 여부
+        self.convert_key = None
 
         # Fine Tuning indexing을 위한 DataFrame과 index array 산출
         self.param_ins = ParameterIndex(model, weight_ptn, bias_ptn, block_ptn)
@@ -74,9 +76,22 @@ class Tuner:
         self.make_idx_df(tuning_target)
 
         # Fine tuning 방법 정의
-        tuning0_fn = FullFineTuning(self.model, self.idx_df, self.idx_array)
-        tuning1_fn = FixedFeatureExtractor(self.model, self.idx_df, self.idx_array, layer_key=layer_key)
-        tuning2_fn = PartialLayerFreezing(self.model, self.idx_df, self.idx_array, freezing_ratio=freezing_ratio)
+        self.methods = {
+            0:FullFineTuning(self.model, self.idx_df, self.idx_array),
+            1:FixedFeatureExtractor(self.model, self.idx_df, self.idx_array, layer_key=layer_key),
+            2:PartialLayerFreezing(self.model, self.idx_df, self.idx_array, freezing_ratio=freezing_ratio),
+            3:FreezeNUnfreeze(self.model, self.idx_df, self.idx_array, min=min_freezing_ratio, max=max_freezing_ratio, patience=patience)
+        }
+        self.method = None
+
+
+    def __call__(self, epoch):
+        if self.convert_key is None:
+            self.method = self.methods.get(self.how, self.method[0])
+
+        if self.convert_key:
+            self.convert_key = self.method(epoch)
+
 
 
     def target_idx_freezing(self, idx_array:np.ndarray, freezing:bool=True):
@@ -167,12 +182,13 @@ class FullFineTuning(Tuner):
         self.model = model
         self.idx_df = idx_df
         self.idx_array = idx_array
+        self.convert_key = True
 
 
-    def __call__(self):
+    def __call__(self, _):
         self.target_idx_freezing(idx_array=self.idx_array, freezing=False)
-        convert_key = False
-        return convert_key
+        self.convert_key = False
+        return self.convert_key
     
 
 
@@ -190,17 +206,18 @@ class FixedFeatureExtractor(Tuner):
         self.idx_df = idx_df
         self.idx_array = idx_array
         self.layer_key = layer_key
+        self.convert_key = True
 
     
-    def __call__(self):
+    def __call__(self, _):
         # freezing 기준이 될 layer의 index를 가져온다.
         target_before_idx = self.layer_key_check_and_get_target_index()
         # freezing할 index들의 array
         freezing_idx_array = self.idx_array[:target_before_idx]
         # freezing
         self.target_idx_freezing(idx_array=freezing_idx_array, freezing=True)
-        convert_key = False
-        return convert_key
+        self.convert_key = False
+        return self.convert_key
 
 
     def layer_key_check_and_get_target_index(self)->int:
@@ -247,17 +264,18 @@ class PartialLayerFreezing(Tuner):
         self.idx_df = idx_df
         self.idx_array = idx_array
         self.freezing_ratio = freezing_ratio
+        self.convert_key = True
 
 
-    def __call__(self):
+    def __call__(self, _):
         # instance variable의 무결성 확인
         self.check_freezing_ratio()
         # freeze할 layer의 index
         freezing_idx_array = self.get_freeze_layer_index_array()
         # freezing
         self.target_idx_freezing(idx_array=freezing_idx_array, freezing=True)
-        convert_key = False
-        return convert_key
+        self.convert_key = False
+        return self.convert_key
 
 
     def get_freeze_layer_index_array(self)->np.ndarray:
@@ -274,7 +292,34 @@ class PartialLayerFreezing(Tuner):
 
         if not isinstance(self.freezing_ratio, float):
             raise ValueError(f"freezing_ratio는 float이 입력되어야 합니다. 현재 {self.freezing_ratio}가 입력되었습니다.")
-        
+
+
+
+class FreezeNUnfreeze(Tuner):
+    def __init__(
+            self, 
+            model:torch.nn.Module, 
+            idx_df:pd.DataFrame,
+            idx_array:np.ndarray, 
+            min:float, 
+            max:float, 
+            patience:int
+        ):
+        self.model = model
+        self.idx_df = idx_df
+        self.idx_array = idx_array
+        self.min = min
+        self.max = max
+        self.patience = patience
+
+        # metadata
+        self.convert_key = True
+        self.current_epoch = None
+
+
+    def __call__(self, epoch):
+        pass
+
 
 
 class ParameterIndex:
