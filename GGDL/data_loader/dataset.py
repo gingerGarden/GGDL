@@ -113,8 +113,8 @@ class ImgDataset(data.Dataset):
 
 class GetLoader:
     def __init__(
-            self, 
-            dataset_class:data.Dataset, 
+            self,             
+            dataset_class:data.Dataset,
             idx_dict:Dict[str, str], 
             augments:Optional[Callable]=None, 
             batch_size:int=16, 

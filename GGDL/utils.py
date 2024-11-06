@@ -2,6 +2,8 @@ from typing import List, Dict, Any, Tuple, Callable, Union, Optional
 
 import random, os, warnings, torch
 import numpy as np
+from torch.utils import data
+
 from GGUtils.utils.path import new_dir_maker
 
 
@@ -216,3 +218,44 @@ class GetDevice:
                 print("---"*20)
         else:
             print("CUDA is not available!")
+            
+            
+            
+class Option:
+    def __init__(
+        self, 
+        
+        process_id:int,
+        
+        model_name:str, pretrained:bool, device:str, dataset_class:data.Dataset,
+        
+        idx_dict:Dict[int, Dict[str, List[Dict[str, int]]]],
+        img_channel:int=3, class_size:Optional[int]=None, custom_header:torch.nn.Module=None,
+        
+        img_size:int=224, resize_how:int=0, resize_how_list:List[int]=[2,3,4], resize_padding_color:str='black',
+        augments:Optional[Callable]=None, batch_size:int=16, worker:int=0, 
+        
+        tuner_how:int=0
+        ):
+        
+        self.process_id = process_id
+        
+        self.model_name = model_name
+        self.pretrained = pretrained
+        self.device = device
+        self.idx_dict = idx_dict
+        
+        self.img_channel = img_channel
+        self.class_size = class_size
+        self.custom_header = custom_header
+        
+        self.dataset_class = dataset_class
+        self.augments = augments
+        self.img_size = img_size
+        self.batch_size = batch_size
+        self.worker = worker
+        self.resize_how = resize_how
+        self.resize_how_list = resize_how_list
+        self.resize_padding_color = resize_padding_color
+
+        self.tuner_how = tuner_how

@@ -87,10 +87,11 @@ class Tuner:
 
     def __call__(self, epoch):
         if self.convert_key is None:
-            self.method = self.methods.get(self.how, self.method[0])
-
-        if self.convert_key:
+            self.method = self.methods.get(self.how, self.methods[0])
             self.convert_key = self.method(epoch)
+            
+        if self.convert_key:
+            print('test_code')
 
 
 
@@ -146,7 +147,7 @@ class Tuner:
         return idx_array
     
 
-    def check_freeze(self):
+    def check_freezing_parameter(self):
         stack = []
         end_of_freeze = None
         before_grad = None

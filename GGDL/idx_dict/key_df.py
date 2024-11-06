@@ -71,7 +71,8 @@ def add_multiclass_onehot_columns(df:pd.DataFrame, column:str, key:str='dummy', 
     # dummy_df의 column이 기존 column과 충돌나는 경우 ValueError 발생
     duplicated_key = set(dummy_df.columns) & set(df_copy.columns)
     if duplicated_key:
-        raise ValueError(f"multiclass로 추가된 컬럼명({", ".join(duplicated_key)})이 기존 df에 이미 존재합니다. dummy의 값을 바꾸십시오.")
+        columns_txt = ", ".join(duplicated_key)
+        raise ValueError(f"multiclass로 추가된 컬럼명({columns_txt})이 기존 df에 이미 존재합니다. dummy의 값을 바꾸십시오.")
 
     # 컬럼 추가
     df_copy[dummy_df.columns] = dummy_df
