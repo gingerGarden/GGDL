@@ -75,7 +75,7 @@ class Classification(torch.nn.Module):
         Backbone 모델을 설정하는 메서드
         """
         if custom_head_fn is not None:
-            class_size = None
+            class_size = 0
 
         self.backbone = timm.create_model(
             model_name=model_name, pretrained=pretrained, 

@@ -227,11 +227,13 @@ class Option:
         
         process_id:int,
         
-        model_name:str, pretrained:bool, device:str, dataset_class:data.Dataset,
+        model_name:str, pretrained:bool, device:str, dataset_class:data.Dataset, use_amp:bool,
+
+        optimizer:torch.optim, loss_fn:torch.nn.modules.loss, 
         
         idx_dict:Dict[int, Dict[str, List[Dict[str, int]]]],
         img_channel:int=3, class_size:Optional[int]=None, custom_header:torch.nn.Module=None,
-        
+
         img_size:int=224, resize_how:int=0, resize_how_list:List[int]=[2,3,4], resize_padding_color:str='black',
         augments:Optional[Callable]=None, batch_size:int=16, worker:int=0, 
         
@@ -244,6 +246,11 @@ class Option:
         self.pretrained = pretrained
         self.device = device
         self.idx_dict = idx_dict
+
+        self.use_amp = use_amp
+
+        self.optimizer = optimizer
+        self.loss_fn = loss_fn
         
         self.img_channel = img_channel
         self.class_size = class_size

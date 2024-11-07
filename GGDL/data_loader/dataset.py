@@ -1,4 +1,5 @@
-from typing import List, Dict, Any, Tuple, Callable, Union, Optional
+from typing import List, Dict, Any, Tuple, Callable, Union, Optional, Literal
+
 
 import torch
 from torch.utils import data
@@ -7,6 +8,7 @@ from GGUtils.img.img import get_rgb_img
 from GGUtils.img.viewer import show_img
 from GGImgMorph.geometric.geometric import Resize
 from ..utils import img_to_tensor, tensor_to_img
+
 
 
 
@@ -28,9 +30,7 @@ class ImgDataset(data.Dataset):
             self, 
             key_list:List[Dict[str, Union[str, np.ndarray]]],
             augments:Optional[Callable]=None,
-
             path_key:str='path', label_key:str='label',
-            
             # resize 관련 매개변수
             resize:Optional[int]=None, 
             resize_quality:str='low',
