@@ -12,7 +12,7 @@ class Optim:
     def __init__(self, name:str, hp_dict:Dict[str, Any]):
         """
         name에 설정된 optimizer를 설정한다.
-
+cd .
         대상 optimizer 와 torch, torch_optimizer 예제 코드
         1. SGD (Stochastic Gradient Descent): 확률적 경사 하강법으로, 각 배치마다 모델의 매개변수를 업데이트합니다. 학습률과 모멘텀 등의 하이퍼파라미터를 조정하여 성능을 향상시킬 수 있습니다.
             >>> optimizer = torch.optim.SGD(model.parameters(), lr=0.01, momentum=0.9)
@@ -143,6 +143,13 @@ class Optim:
 
 
 class LabelDtype:
+    
+    LONG_LOSS_FN = (nn.CrossEntropyLoss)
+    FLOAT32_LOSS_FN = (
+        nn.MSELoss, nn.L1Loss, nn.BCELoss, nn.BCEWithLogitsLoss, nn.KLDivLoss, nn.HuberLoss,
+        nn.MarginRankingLoss, nn.CosineEmbeddingLoss, nn.HingeEmbeddingLoss
+    )
+
     def __init__(self, loss_fn:nn.modules.loss=None, dtype:Optional[torch.dtype]=None):
 
         if dtype is None:
@@ -150,21 +157,15 @@ class LabelDtype:
         else:
             self.dtype = dtype
 
-        self.long_loss_fn = (nn.CrossEntropyLoss)
-        self.float32_loss_fn = (
-            nn.MSELoss, nn.L1Loss, nn.BCELoss, nn.BCEWithLogitsLoss, nn.KLDivLoss, nn.HuberLoss,
-            nn.MarginRankingLoss, nn.CosineEmbeddingLoss, nn.HingeEmbeddingLoss
-        )
-
         
     def __call__(self, labels):
         return labels.to(self.dtype)
 
 
     def _check_by_loss_fn(self, loss_fn):
-        if isinstance(loss_fn, self.long_loss_fn):
+        if isinstance(loss_fn, self.LONG_LOSS_FN):
             return torch.long
-        elif isinstance(loss_fn, self.float32_loss_fn):
+        elif isinstance(loss_fn, self.FLOAT32_LOSS_FN):
             return torch.float32
         else:
             raise ValueError(f"Unsupported loss function: {type(loss_fn).__name__}")
