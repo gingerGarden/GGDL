@@ -240,6 +240,12 @@ class Option:
         augments:Optional[Callable]=None, batch_size:int=16, worker:int=0, 
         
         tuner_how:int=0,
+
+        verbose:bool=False,
+
+        log_parents:str=None,
+        results_parents:str=None,
+        espoint_parents:str=None
         ):
         
         self.process_id = process_id
@@ -272,3 +278,10 @@ class Option:
         self.resize_padding_color = resize_padding_color
 
         self.tuner_how = tuner_how
+
+        self.verbose = verbose
+
+        self.log_parents = log_parents
+        self.results_parents = results_parents
+        self.espoint_parents = espoint_parents
+
